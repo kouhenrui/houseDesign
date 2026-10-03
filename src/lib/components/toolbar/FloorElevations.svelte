@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
-  import { currentProject, updateFloorElevation, updateFloorSlabThickness, updateProjectFoundationType } from '$lib/stores/project';
+  import { currentProject, updateFloorElevation, updateFloorSlabThickness } from '$lib/stores/project';
+  import { foundationDesignService } from '$lib/services/foundationDesignService';
   import { floorElevations, DEFAULT_FLOOR_SPACING } from '$lib/utils/floors';
 
   const entries = $derived(floorElevations($currentProject?.floors ?? []));
@@ -28,7 +29,7 @@
   <label class="block text-sm text-gray-700 dark:text-gray-300">
     {$t('foundation.title')}
     <select value={$currentProject?.foundationType ?? 'slab-on-grade'}
-      onchange={(event) => updateProjectFoundationType((event.currentTarget as HTMLSelectElement).value as 'slab-on-grade' | 'crawlspace' | 'basement')}
+      onchange={(event) => foundationDesignService.selectType((event.currentTarget as HTMLSelectElement).value as 'slab-on-grade' | 'crawlspace' | 'basement')}
       class="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:text-gray-100">
       <option value="slab-on-grade">{$t('foundation.slab')}</option>
       <option value="crawlspace">{$t('foundation.crawlspace')}</option>

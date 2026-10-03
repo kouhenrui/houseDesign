@@ -8,7 +8,7 @@
   import { openProject } from '$lib/services/projectOpening';
   import ImportError from '$lib/components/ImportError.svelte';
   import { onDestroy } from 'svelte';
-  import { activateMeasurementTool, selectedTool, placingFurnitureId, placingDoorType, placingWindowType, placingStair, addStair, placingColumn, placingColumnShape, activeFloor, setBackgroundImage, canvasCamX, canvasCamY, placingEntourageId, addCustomEntourage, selectedUtilityRoute, updateFoundationOutline, currentProject } from '$lib/stores/project';
+  import { activateMeasurementTool, selectedTool, placingFurnitureId, placingDoorType, placingWindowType, placingStair, addStair, placingColumn, placingColumnShape, activeFloor, setBackgroundImage, canvasCamX, canvasCamY, placingEntourageId, addCustomEntourage, selectedUtilityRoute, currentProject } from '$lib/stores/project';
   import type { Tool } from '$lib/stores/project';
   import type { Door, Window as Win, CustomEntourageDef } from '$lib/models/types';
   import { entourageCatalog, entourageCategories } from '$lib/utils/entourageCatalog';
@@ -18,6 +18,8 @@
   import type { FurnitureDef } from '$lib/utils/furnitureCatalog';
   import FurnitureThumbnail from './FurnitureThumbnail.svelte';
   import CustomModelPanel from './CustomModelPanel.svelte';
+  import PluginManager from '$lib/components/plugins/PluginManager.svelte';
+  import { foundationDesignService } from '$lib/services/foundationDesignService';
   import { createProjectFromRoomPlan, extractRoomJsonFromZip, roomPlanImportOptions, validateRoomPlan, ORTHO_VERSION } from '$lib/utils/roomplanImport';
 
   const openingLifetime = new AbortController();
@@ -370,6 +372,7 @@
     {#if activeTab === 'draw'}
       <div class="space-y-1">
         <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">{$t('buildTools.tools')}</h3>
+        <PluginManager />
         <button
           class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors {currentTool === 'select' ? 'bg-blue-50 text-slate-800 ring-1 ring-blue-200' : 'hover:bg-gray-50 text-gray-700'}"
           onclick={() => setTool('select')}
@@ -435,7 +438,7 @@
           </button>
         </div>
         {#if $currentProject?.foundationOutline?.length}
-          <button type="button" onclick={() => updateFoundationOutline(undefined)}
+          <button type="button" onclick={() => foundationDesignService.clearOutline()}
             class="w-full px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-50 border border-gray-200 rounded">
             {$t('buildTools.clearFoundation')}
           </button>

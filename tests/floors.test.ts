@@ -2,8 +2,9 @@ import { beforeEach, expect, it } from 'vitest';
 import { get } from 'svelte/store';
 import { addFloor, createDefaultFloor, currentProject, loadProject, removeFloor, setActiveFloor, undo, redo, selectedElementId, selectedElementIds, elevationWallId, selectedTool } from '$lib/stores/project';
 import { roomProject } from './fixtures/project';
-import { updateFloorElevation, updateFloorSlabThickness, updateProjectFoundationType, updateFoundationOutline } from '$lib/stores/project';
+import { updateFloorElevation, updateFloorSlabThickness } from '$lib/stores/project';
 import { utilityRouteService } from '$lib/services/utilityRouteService';
+import { foundationDesignService } from '$lib/services/foundationDesignService';
 import { readProject } from '$lib/utils/projectValidation';
 import { calibrationMode, calibrationPoints } from '$lib/stores/project';
 import { floorElevations } from '$lib/utils/floors';
@@ -158,20 +159,20 @@ it('edits slab depths independently, validates input and restores defaults with 
 });
 
 it('stores foundation selection at project level and supports undo and redo', () => {
-  updateProjectFoundationType('crawlspace');
+  foundationDesignService.selectType('crawlspace');
   expect(get(currentProject)!.foundationType).toBe('crawlspace');
-  updateProjectFoundationType('basement');
+  foundationDesignService.selectType('basement');
   undo();
   expect(get(currentProject)!.foundationType).toBeUndefined();
   redo();
   expect(get(currentProject)!.foundationType).toBe('basement');
-  updateProjectFoundationType('invalid' as never);
+  expect(() => foundationDesignService.selectType('invalid' as never)).toThrow(/supported foundation/);
   expect(get(currentProject)!.foundationType).toBe('basement');
 });
 
 it('persists foundation outlines and floor-local utility routes with undo', () => {
   const outline = [{ x: 0, y: 0 }, { x: 600, y: 0 }, { x: 600, y: 400 }, { x: 0, y: 400 }];
-  updateFoundationOutline(outline);
+  foundationDesignService.setOutline(outline);
   const routeId = utilityRouteService.add({ kind: 'drain', points: [{ x: 100, y: 100 }, { x: 300, y: 100 }, { x: 300, y: 250 }], sizeMm: 100, slopePercent: 2 });
   expect(routeId).toBeTruthy();
   expect(get(currentProject)!.foundationOutline).toEqual(outline);

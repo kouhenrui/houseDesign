@@ -14,6 +14,8 @@ import { detailItem, itemDetails, validateItemDetails } from '$lib/utils/itemDet
 import { readProject } from '$lib/utils/projectValidation';
 import type { UtilityRouteRepository } from '$lib/domain/utilities/UtilityRouteRepository';
 import type { UtilityRoute as DomainUtilityRoute } from '$lib/domain/utilities/UtilityRoute';
+import { FoundationPlan } from '$lib/domain/foundation/FoundationPlan';
+import type { FoundationPlanRepository } from '$lib/domain/foundation/FoundationPlanRepository';
 
 
 function uid(): string {
@@ -929,25 +931,23 @@ export function updateFloorSlabThickness(floorId: string, thickness?: number) {
   currentProject.set({ ...p });
 }
 
-export function updateProjectFoundationType(foundationType: FoundationType) {
-  const p = get(currentProject);
-  if (!p || !['slab-on-grade', 'crawlspace', 'basement'].includes(foundationType) || p.foundationType === foundationType) return;
-  snapshot('Changed foundation type', 'project-foundation');
-  p.foundationType = foundationType;
-  p.updatedAt = new Date();
-  currentProject.set({ ...p });
-}
-
-export function updateFoundationOutline(points?: Point[]) {
-  const p = get(currentProject);
-  if (!p || (points && (points.length < 3 || points.some(point => !Number.isFinite(point.x) || !Number.isFinite(point.y))))) return;
-  if (JSON.stringify(p.foundationOutline) === JSON.stringify(points)) return;
-  snapshot('Changed foundation outline', 'project-foundation-outline');
-  if (points) p.foundationOutline = points.map(point => ({ ...point }));
-  else delete p.foundationOutline;
-  p.updatedAt = new Date();
-  currentProject.set({ ...p });
-}
+export const projectFoundationPlanRepository: FoundationPlanRepository = {
+  load() {
+    const project = get(currentProject);
+    return FoundationPlan.create(project?.foundationType, project?.foundationOutline);
+  },
+  save(plan) {
+    const project = get(currentProject);
+    if (!project || (project.foundationType === plan.type && JSON.stringify(project.foundationOutline) === JSON.stringify(plan.outline))) return;
+    snapshot('Changed foundation plan', 'project-foundation');
+    if (plan.type === undefined) delete project.foundationType;
+    else project.foundationType = plan.type;
+    if (plan.outline === undefined) delete project.foundationOutline;
+    else project.foundationOutline = plan.outline.map(point => ({ x: point.x, y: point.y }));
+    project.updatedAt = new Date();
+    currentProject.set({ ...project });
+  },
+};
 
 export const projectUtilityRouteRepository: UtilityRouteRepository = {
   add(route: DomainUtilityRoute) {

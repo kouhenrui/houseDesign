@@ -1,4 +1,7 @@
+import type { FoundationType } from '$lib/domain/foundation/FoundationPlan';
+
 export interface Point { x: number; y: number; }
+export type FoundationOutline = Point[];
 
 /** Shared item metadata. Null explicitly clears a retained native value. */
 export interface ItemDetails {
@@ -19,7 +22,6 @@ export interface ProjectPackageState {
   mapping: PackageMapping;
   assets: Record<string, string>; // assets/<filename> → base64 bytes, one copy per file
 }
-
 export interface Wall {
   details?: ItemDetails;
   id: string;
@@ -267,7 +269,7 @@ export interface Project {
   attachmentNames?: Record<string, string>;
   projectPackage?: ProjectPackageState;
   foundationType?: FoundationType;
-  foundationOutline?: Point[];
+  foundationOutline?: FoundationOutline;
   id: string;
   name: string;
   description?: string;
@@ -277,5 +279,6 @@ export interface Project {
   updatedAt: Date;
   customEntourage?: CustomEntourageDef[];
 }
+export type { FoundationType } from '$lib/domain/foundation/FoundationPlan';
+export type FoundationPlanOutline = FoundationOutline;
 
-export type FoundationType = 'slab-on-grade' | 'crawlspace' | 'basement';
