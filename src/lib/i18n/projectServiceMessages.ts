@@ -88,7 +88,7 @@ function countedMessage(message: string, language: Locale): string {
   return projectValidationMessage(packageMessage(message, language), language);
 }
 const outcomes = (['welcome.noImport', 'restore.retry', 'package.retry', 'projectService.historyUnchanged'] as const)
-  .flatMap(key => (['en', 'pt'] as const).map(locale => ({ key, text: ` ${translate(locale, key)}` })));
+  .flatMap(key => (['en', 'pt', 'zh-CN'] as const).map(locale => ({ key, text: ` ${translate(locale, key)}` })));
 
 /** Translate known service diagnostics without altering unknown error details. */
 export function projectServiceMessage(message: string, language: Locale): string {

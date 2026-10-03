@@ -221,7 +221,7 @@
       const file = input.files?.[0];
       if (!file) return;
       if (file.size > 5 * 1024 * 1024) {
-        alert('Warning: Image is larger than 5MB. This may slow down the application.');
+        alert($t('imageImport.largeWarning'));
       }
       const reader = new FileReader();
       reader.onload = () => {

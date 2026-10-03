@@ -6,5 +6,6 @@ export const aiRenderMessages: Record<string, TranslationKey> = {
   "Browser storage is unavailable. This model will be used for this render only.": "aiRenderMessage.storage",
   "Rendering failed.": "aiRenderMessage.failed",
   "Please add your Gemini API key in Settings → AI first.": "aiRenderMessage.key",
+  "Invalid provider URL. Update Settings → AI.": "aiRenderMessage.providerUrl",
   "No image returned. Try a different model or prompt.": "aiRenderMessage.noImage"
 };

@@ -1,16 +1,18 @@
 import { derived, writable } from 'svelte/store';
 import { en } from './locales/en';
 import { pt } from './locales/pt';
+import { zhCN } from './locales/zh-CN';
 
-export type Locale = 'en' | 'pt';
+export type Locale = 'en' | 'pt' | 'zh-CN';
 export type TranslationKey = keyof typeof en;
-const dictionaries: Record<Locale, Record<TranslationKey, string>> = { en, pt };
+const dictionaries: Record<Locale, Partial<Record<TranslationKey, string>>> = { en, pt, 'zh-CN': zhCN };
 const preference = writable<Locale>('en');
-const isLocale = (value: unknown): value is Locale => value === 'en' || value === 'pt';
+const isLocale = (value: unknown): value is Locale => value === 'en' || value === 'pt' || value === 'zh-CN';
+export const intlLocale = (language: Locale) => language === 'pt' ? 'pt-BR' : language;
 
 export function translate(language: Locale, key: TranslationKey, variables: Record<string, string | number> = {}): string {
   // Single-pass substitution preserves literal braces in user-provided values.
-  return dictionaries[language][key].replace(/\{(\w+)\}/g, (token, name) =>
+  return (dictionaries[language][key] ?? en[key]).replace(/\{(\w+)\}/g, (token, name) =>
     Object.hasOwn(variables, name) ? String(variables[name]) : token);
 }
 
@@ -28,7 +30,7 @@ export const locale = {
 export function initializeLocale() {
   let saved: unknown;
   try { saved = localStorage.getItem('o3d_locale'); } catch { /* Storage can be disabled. */ }
-  // Keep English until the remaining interface has been translated; users opt in.
+  // Keep English until users opt in to another language.
   locale.set(isLocale(saved) ? saved : 'en');
 }
 

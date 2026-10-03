@@ -162,7 +162,7 @@
 
   function providerDestination(): string {
     try { return normalizeBaseUrl($openAISettings.baseUrl); }
-    catch { return 'Invalid provider URL. Update Settings → AI.'; }
+    catch { return $t('aiRenderMessage.providerUrl'); }
   }
 
   function buildAIPrompt(): string {

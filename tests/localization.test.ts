@@ -3,6 +3,10 @@ import { get } from 'svelte/store';
 import { initializeLocale, locale, t, translate, type Locale } from '../src/lib/i18n';
 import { en } from '../src/lib/i18n/locales/en';
 import { pt } from '../src/lib/i18n/locales/pt';
+import { zhCN } from '../src/lib/i18n/locales/zh-CN';
+import { furnitureName } from '../src/lib/i18n/furnitureNames';
+import { furnitureCatalog } from '../src/lib/utils/furnitureCatalog';
+import { projectServiceMessage } from '../src/lib/i18n/projectServiceMessages';
 
 afterEach(() => { vi.unstubAllGlobals(); locale.set('en'); });
 
@@ -18,6 +22,16 @@ describe('locale preferences', () => {
       expect(pt[key].trim()).not.toBe('');
       expect(pt[key].match(/\{\w+\}/g) ?? []).toEqual(en[key].match(/\{\w+\}/g) ?? []);
     }
+    for (const key of Object.keys(zhCN) as (keyof typeof zhCN)[]) {
+      expect(zhCN[key].trim()).not.toBe('');
+      expect((zhCN[key].match(/\{\w+\}/g) ?? []).sort()).toEqual((en[key].match(/\{\w+\}/g) ?? []).sort());
+    }
+    expect(Object.keys(zhCN).sort()).toEqual(Object.keys(en).sort());
+    const unchangedEnglish = Object.keys(en).filter((key) => zhCN[key as keyof typeof en] === en[key as keyof typeof en]);
+    expect(unchangedEnglish).toEqual([
+      'settings.goToGoogleAiStudio',
+      'entourageLabels.item.car-suv',
+    ]);
   });
   it('updates subscribed text, persists the choice and sets document language', () => {
     const setItem = vi.fn();
@@ -47,5 +61,21 @@ describe('locale preferences', () => {
     expect(() => initializeLocale()).not.toThrow();
     expect(() => locale.set('pt')).not.toThrow();
     expect(get(t)('settings.title')).toBe(translate('pt', 'settings.title'));
+  });
+  it('supports Simplified Chinese across the complete interface dictionary', () => {
+    locale.set('zh-CN');
+    expect(get(t)('settings.title')).toBe('设置');
+    expect(get(t)('library.empty')).toBe('暂无项目');
+    expect(get(t)('settings.saved')).toBe('✓ 已保存');
+    expect(get(t)('versions.interval')).toBe('每 5 分钟自动保存一次版本。');
+  });
+  it('localizes all catalog names and service-message suffixes in Simplified Chinese', () => {
+    for (const item of furnitureCatalog) {
+      expect(furnitureName(item.id, 'zh-CN')).toMatch(/\p{Script=Han}/u);
+    }
+    expect(furnitureName('sink_k', 'zh-CN')).toBe('厨房水槽');
+    expect(furnitureName('sink_b', 'zh-CN')).toBe('洗手池');
+    expect(projectServiceMessage(`Import failed. ${translate('en', 'welcome.noImport')}`, 'zh-CN'))
+      .toBe(`Import failed. ${translate('zh-CN', 'welcome.noImport')}`);
   });
 });

@@ -1,6 +1,7 @@
 import type { FurnitureItem, Project } from '$lib/models/types';
 import type { Locale } from './index';
 import { getCatalogItem } from '$lib/utils/furnitureCatalog';
+import { zhCNFurnitureName } from './zhCNFurnitureNames';
 
 // Display names only: catalog IDs and saved project data remain unchanged.
 export const portugueseFurnitureNames: Readonly<Record<string, string>> = {
@@ -200,7 +201,9 @@ export const portugueseFurnitureNames: Readonly<Record<string, string>> = {
 export function furnitureName(id: string, language: Locale): string {
   const item = getCatalogItem(id);
   if (!item) return id;
-  return language === 'pt' ? portugueseFurnitureNames[id] ?? item.name : item.name;
+  if (language === 'pt') return portugueseFurnitureNames[id] ?? item.name;
+  if (language === 'zh-CN') return zhCNFurnitureName(id, item.name);
+  return item.name;
 }
 
 
