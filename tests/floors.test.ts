@@ -2,7 +2,8 @@ import { beforeEach, expect, it } from 'vitest';
 import { get } from 'svelte/store';
 import { addFloor, createDefaultFloor, currentProject, loadProject, removeFloor, setActiveFloor, undo, redo, selectedElementId, selectedElementIds, elevationWallId, selectedTool } from '$lib/stores/project';
 import { roomProject } from './fixtures/project';
-import { updateFloorElevation, updateFloorSlabThickness } from '$lib/stores/project';
+import { updateFloorElevation, updateFloorSlabThickness, updateProjectFoundationType, updateFoundationOutline, addUtilityRoute } from '$lib/stores/project';
+import { readProject } from '$lib/utils/projectValidation';
 import { calibrationMode, calibrationPoints } from '$lib/stores/project';
 import { floorElevations } from '$lib/utils/floors';
 
@@ -153,6 +154,44 @@ it('edits slab depths independently, validates input and restores defaults with 
   expect(get(currentProject)!.floors[1]).not.toHaveProperty('slabThickness');
   undo();
   expect(get(currentProject)!.floors[1].slabThickness).toBe(32.5);
+});
+
+it('stores foundation selection at project level and supports undo and redo', () => {
+  updateProjectFoundationType('crawlspace');
+  expect(get(currentProject)!.foundationType).toBe('crawlspace');
+  updateProjectFoundationType('basement');
+  undo();
+  expect(get(currentProject)!.foundationType).toBeUndefined();
+  redo();
+  expect(get(currentProject)!.foundationType).toBe('basement');
+  updateProjectFoundationType('invalid' as never);
+  expect(get(currentProject)!.foundationType).toBe('basement');
+});
+
+it('persists foundation outlines and floor-local utility routes with undo', () => {
+  const outline = [{ x: 0, y: 0 }, { x: 600, y: 0 }, { x: 600, y: 400 }, { x: 0, y: 400 }];
+  updateFoundationOutline(outline);
+  const routeId = addUtilityRoute('drain', [{ x: 100, y: 100 }, { x: 300, y: 100 }, { x: 300, y: 250 }], 100, 2);
+  expect(routeId).toBeTruthy();
+  expect(get(currentProject)!.foundationOutline).toEqual(outline);
+  expect(get(currentProject)!.floors[0].utilityRoutes).toEqual([{ id: routeId, kind: 'drain', points: [{ x: 100, y: 100 }, { x: 300, y: 100 }, { x: 300, y: 250 }], sizeMm: 100, slopePercent: 2 }]);
+  const restored = readProject(JSON.parse(JSON.stringify(get(currentProject))));
+  expect(restored.foundationOutline).toEqual(outline);
+  expect(restored.floors[0].utilityRoutes).toHaveLength(1);
+  undo();
+  expect(get(currentProject)!.floors[0].utilityRoutes).toBeUndefined();
+  redo();
+  expect(get(currentProject)!.floors[0].utilityRoutes).toHaveLength(1);
+  expect(addUtilityRoute('drain', [{ x: 0, y: 0 }], 100, 2)).toBe('');
+});
+
+it('rejects malformed foundation and utility geometry when importing a project', () => {
+  const source = roomProject();
+  source.foundationOutline = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
+  expect(() => readProject(source)).toThrow(/foundationOutline/);
+  delete source.foundationOutline;
+  source.floors[0].utilityRoutes = [{ id: 'bad-route', kind: 'drain', points: [{ x: 0, y: 0 }], sizeMm: 50 } as never];
+  expect(() => readProject(source)).toThrow(/utilityRoutes/);
 });
 
 it('discards calibration points across floor switches, additions, removal and history', () => {

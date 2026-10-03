@@ -18,7 +18,7 @@ type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
 export function hasPlanContent(floor: Floor): boolean {
   return !!floor.backgroundImage || [floor.walls, floor.furniture, floor.stairs,
     floor.columns, floor.entourage, floor.measurements, floor.annotations,
-    floor.textAnnotations].some(items => !!items?.length);
+    floor.textAnnotations, floor.utilityRoutes].some(items => !!items?.length);
 }
 
 /** Finite plan geometry used by Fit, including floors without walls. */
@@ -35,6 +35,7 @@ export function planContentBounds(floor: Floor, options: {
   units?: 'metric' | 'imperial';
   zoom?: number;
   backgroundSize?: { width: number; height: number };
+  extraPoints?: Point[];
 }): Bounds | null {
   let bounds: Bounds | null = null;
   function point(x: number, y: number) {
@@ -46,6 +47,8 @@ export function planContentBounds(floor: Floor, options: {
     }
   }
   function add(b: Bounds) { point(b.minX, b.minY); point(b.maxX, b.maxY); }
+  for (const extra of options.extraPoints ?? []) point(extra.x, extra.y);
+  for (const route of floor.utilityRoutes ?? []) for (const routePoint of route.points) point(routePoint.x, routePoint.y);
   function rectangle(x: number, y: number, width: number, height: number, rotation: number) {
     const a = rotation * Math.PI / 180, c = Math.abs(Math.cos(a)), s = Math.abs(Math.sin(a));
     const dx = (Math.abs(width) * c + Math.abs(height) * s) / 2;

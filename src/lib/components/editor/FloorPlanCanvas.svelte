@@ -9,8 +9,8 @@
   import { planContentBounds, hasPlanContent } from '$lib/utils/planContentBounds';
   import { connectedWallEndpoints } from '$lib/utils/wallEditing';
   import { createDrawScheduler } from '$lib/utils/drawScheduler';
-  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, duplicateSelection, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode } from '$lib/stores/project';
-  import type { Point, Wall, Door, Window as Win, FurnitureItem, Stair, Column, GuideLine, Measurement, Annotation, TextAnnotation, CustomEntourageDef } from '$lib/models/types';
+  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, duplicateSelection, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode, updateFoundationOutline, addUtilityRoute, removeUtilityRoute, selectedUtilityRoute } from '$lib/stores/project';
+  import type { Point, Wall, Door, Window as Win, FurnitureItem, Stair, Column, GuideLine, Measurement, Annotation, TextAnnotation, CustomEntourageDef, UtilityRoute, UtilityRouteKind } from '$lib/models/types';
   import type { Floor, Room } from '$lib/models/types';
   import { resolveRoomGeometry, roomLabelPosition, roomCentroid } from '$lib/utils/roomDetection';
   import { roomHoles } from '$lib/utils/roomNesting';
@@ -101,6 +101,10 @@
   let draggingGuideId: string | null = $state(null);
 
   let currentTool: string = $state('select');
+  let foundationDraft: Point[] = $state([]);
+  let utilityDraft: Point[] = $state([]);
+  let selectedRouteId: string | null = $state(null);
+  let routeSettings = $state(get(selectedUtilityRoute));
 
   // Measurement tool
   let measureStart: Point | null = $state(null);
@@ -853,6 +857,79 @@
     _drawRooms(getCS(), currentFloor, detectedRooms, currentSelectedRoomId, showRoomLabels, showDimensions, dimSettings, roomPolygons);
   }
 
+  const utilityColors: Record<UtilityRouteKind, string> = {
+    power: '#d97706', lighting: '#eab308', 'cold-water': '#0284c7', 'hot-water': '#dc2626',
+    drain: '#475569', vent: '#64748b', gas: '#a16207',
+  };
+
+  function drawFoundationOutline(points: Point[], preview = false) {
+    if (points.length < 2) return;
+    ctx.save();
+    ctx.beginPath();
+    const first = worldToScreen(points[0].x, points[0].y);
+    ctx.moveTo(first.x, first.y);
+    for (const point of points.slice(1)) {
+      const screen = worldToScreen(point.x, point.y);
+      ctx.lineTo(screen.x, screen.y);
+    }
+    if (points.length >= 3) ctx.closePath();
+    const kind = get(currentProject)?.foundationType ?? 'slab-on-grade';
+    const color = kind === 'crawlspace' ? '#b45309' : kind === 'basement' ? '#0f766e' : '#57534e';
+    ctx.fillStyle = preview ? `${color}12` : `${color}18`;
+    if (points.length >= 3) ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = preview ? 2 : 3;
+    ctx.setLineDash(preview ? [7, 5] : [10, 4]);
+    ctx.stroke(); ctx.setLineDash([]);
+    for (const point of points) {
+      const screen = worldToScreen(point.x, point.y);
+      ctx.beginPath(); ctx.arc(screen.x, screen.y, 3.5, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawUtilityRoute(route: UtilityRoute, preview = false) {
+    if (route.points.length < 2) return;
+    const color = utilityColors[route.kind];
+    ctx.save();
+    ctx.beginPath();
+    const first = worldToScreen(route.points[0].x, route.points[0].y);
+    ctx.moveTo(first.x, first.y);
+    for (const point of route.points.slice(1)) {
+      const screen = worldToScreen(point.x, point.y);
+      ctx.lineTo(screen.x, screen.y);
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(2, Math.min(5, route.sizeMm / 10) * zoom);
+    ctx.setLineDash(route.kind === 'drain' || route.kind === 'vent' ? [8, 4] : []);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    if (preview) ctx.globalAlpha = 0.65;
+    ctx.stroke(); ctx.setLineDash([]);
+    for (const point of route.points) {
+      const screen = worldToScreen(point.x, point.y);
+      ctx.beginPath(); ctx.arc(screen.x, screen.y, 3, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
+    }
+    const middle = route.points[Math.floor(route.points.length / 2)];
+    const labelPoint = worldToScreen(middle.x, middle.y);
+    const label = `${route.sizeMm} mm${route.slopePercent === undefined ? '' : ` · ${route.slopePercent}%`}`;
+    ctx.font = '11px sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    const textWidth = ctx.measureText(label).width;
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillRect(labelPoint.x + 5, labelPoint.y - 19, textWidth + 8, 16);
+    ctx.fillStyle = color; ctx.fillText(label, labelPoint.x + 9, labelPoint.y - 6);
+    ctx.restore();
+  }
+
+  function hitUtilityRoute(point: Point, route: UtilityRoute): boolean {
+    const tolerance = 10 / zoom;
+    return route.points.slice(1).some((end, index) => {
+      const start = route.points[index];
+      const dx = end.x - start.x, dy = end.y - start.y;
+      const lengthSquared = dx * dx + dy * dy;
+      const t = lengthSquared ? Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared)) : 0;
+      return Math.hypot(point.x - start.x - t * dx, point.y - start.y - t * dy) <= tolerance;
+    });
+  }
+
   function drawAngleGuides(start: Point) {
     const s = worldToScreen(start.x, start.y);
     ctx.strokeStyle = '#3b82f640';
@@ -1150,6 +1227,8 @@
     function isSelected(id: string) { return id === selId || multiIds.has(id); }
 
     drawRooms();
+    const foundationOutline = get(currentProject)?.foundationOutline;
+    if (foundationOutline) drawFoundationOutline(foundationOutline);
     // Above the room fills, below this floor's own walls. Room floor textures
     // are opaque, so an underlay drawn before them vanishes the moment the
     // storey encloses a room — which is immediately, now that a new floor
@@ -1215,6 +1294,17 @@
           }
           if (showDimensions && isSelected(win.id)) drawWindowDistanceDimensions(wall, win);
         }
+      }
+    }
+
+    for (const route of floor.utilityRoutes ?? []) {
+      drawUtilityRoute(route);
+      if (route.id === selectedRouteId) {
+        ctx.save(); ctx.strokeStyle = '#111827'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        const first = worldToScreen(route.points[0].x, route.points[0].y); ctx.moveTo(first.x, first.y);
+        for (const point of route.points.slice(1)) { const screen = worldToScreen(point.x, point.y); ctx.lineTo(screen.x, screen.y); }
+        ctx.stroke(); ctx.restore();
       }
     }
 
@@ -1625,6 +1715,13 @@
       }
     }
 
+    if (currentTool === 'foundation' && foundationDraft.length > 0) {
+      drawFoundationOutline([...foundationDraft, { x: snap(mousePos.x), y: snap(mousePos.y) }], true);
+    }
+    if (currentTool === 'utility' && utilityDraft.length > 0) {
+      drawUtilityRoute({ id: 'preview', ...routeSettings, points: [...utilityDraft, { x: snap(mousePos.x), y: snap(mousePos.y) }] }, true);
+    }
+
     // Marquee selection rectangle
     if (marqueeStart && marqueeEnd) {
       const s = worldToScreen(marqueeStart.x, marqueeStart.y);
@@ -1805,6 +1902,8 @@
         wallStart = null;
         wallSequenceFirst = null;
         typedWallLength = '';
+        foundationDraft = [];
+        utilityDraft = [];
       }
       currentFloor = f;
       updateDetectedRooms();
@@ -1835,12 +1934,15 @@
         wallStart = null;
         wallSequenceFirst = null;
         typedWallLength = '';
+        foundationDraft = [];
+        utilityDraft = [];
       }
       currentTool = t;
       textAnnotationMode = t === 'text';
       if (t !== 'text') { editingTextAnnotationId = null; }
       markDirty();
     });
+    const unsub_route = selectedUtilityRoute.subscribe(value => { routeSettings = value; markDirty(); });
     const unsub7 = detectedRoomsStore.subscribe((rooms) => { if (rooms.length > 0) detectedRooms = rooms; markDirty(); });
     const unsub8 = placingDoorType.subscribe((t) => { currentDoorType = t; markDirty(); });
     const unsub9 = placingWindowType.subscribe((t) => { currentWindowType = t; markDirty(); });
@@ -1937,7 +2039,7 @@
     canvas.addEventListener('touchend', onTouchEnd, { passive: false });
     canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
 
-    return () => { mounted = false; drawing?.stop(); stopTextures(); resizeObs.disconnect(); unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsub13(); unsub_multi(); unsub_elevopen(); unsub_elevpick(); unsub14(); unsub_col(); unsub_cols(); unsub_layers(); unsub_snapgrid(); unsubEnt1(); unsubEnt2(); document.removeEventListener('paste', handlePaste); canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); canvas.removeEventListener('touchcancel', onTouchEnd); };
+    return () => { mounted = false; drawing?.stop(); stopTextures(); resizeObs.disconnect(); unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); unsub6(); unsub_route(); unsub7(); unsub8(); unsub9(); unsub10(); unsub11(); unsub12(); unsub13(); unsub_multi(); unsub_elevopen(); unsub_elevpick(); unsub14(); unsub_col(); unsub_cols(); unsub_layers(); unsub_snapgrid(); unsubEnt1(); unsubEnt2(); document.removeEventListener('paste', handlePaste); canvas.removeEventListener('touchstart', onTouchStart); canvas.removeEventListener('touchmove', onTouchMove); canvas.removeEventListener('touchend', onTouchEnd); canvas.removeEventListener('touchcancel', onTouchEnd); };
   });
 
   /** Compute world bounding box of all elements */
@@ -1996,6 +2098,7 @@
         zoom: fittedZoom,
         entourageAspect: id => entourageAspect(id, customEntourageDefs) || 1,
         backgroundSize: floor === currentFloor && bgImage ? bgImage : undefined,
+        extraPoints: floor === currentFloor ? get(currentProject)?.foundationOutline : undefined,
       };
       return ids ? selectionContentBounds(floor,ids,options,detectedRooms) : planContentBounds(floor,options);
   }
@@ -2311,6 +2414,34 @@
         editingDimensionId = id;
       }
       return;
+    }
+
+    if (tool === 'foundation') {
+      const point = { x: snap(wp.x), y: snap(wp.y) };
+      if (!foundationDraft.length || Math.hypot(point.x - foundationDraft[foundationDraft.length - 1].x, point.y - foundationDraft[foundationDraft.length - 1].y) > 1) {
+        foundationDraft = [...foundationDraft, point];
+      }
+      return;
+    }
+
+    if (tool === 'utility') {
+      const point = { x: snap(wp.x), y: snap(wp.y) };
+      if (!utilityDraft.length || Math.hypot(point.x - utilityDraft[utilityDraft.length - 1].x, point.y - utilityDraft[utilityDraft.length - 1].y) > 1) {
+        utilityDraft = [...utilityDraft, point];
+      }
+      return;
+    }
+
+    if (tool === 'select' && currentFloor) {
+      const route = [...currentFloor.utilityRoutes ?? []].reverse().find(item => hitUtilityRoute(wp, item));
+      if (route) {
+        selectedRouteId = route.id;
+        selectedElementId.set(route.id);
+        selectedElementIds.set(new Set());
+        markDirty();
+        return;
+      }
+      selectedRouteId = null;
     }
 
     // Column placement (before select-mode handlers to avoid interception)
@@ -2666,6 +2797,23 @@
     const R = RULER_SIZE;
     const selectionPoint = e.detail >= 2 && sameSelectionPress(e) ? selectionPress!.world : screenToWorld(sx, sy);
     selectionPress = null;
+
+    if (currentTool === 'foundation') {
+      const points = [...foundationDraft];
+      if (points.length >= 3 && Math.hypot(points[0].x - points[points.length - 1].x, points[0].y - points[points.length - 1].y) < 2) points.pop();
+      if (points.length >= 3) updateFoundationOutline(points);
+      foundationDraft = [];
+      return;
+    }
+    if (currentTool === 'utility') {
+      const points = utilityDraft.filter((point, index, all) => index === 0 || Math.hypot(point.x - all[index - 1].x, point.y - all[index - 1].y) > 1);
+      if (points.length >= 2 && currentFloor) {
+        const slopePercent = ['drain', 'vent'].includes(routeSettings.kind) ? routeSettings.slopePercent : undefined;
+        addUtilityRoute(routeSettings.kind, points, routeSettings.sizeMm, slopePercent);
+      }
+      utilityDraft = [];
+      return;
+    }
 
     // Double-click on horizontal ruler → add horizontal guide
     if (sy < R && sx > R) {
@@ -3371,6 +3519,23 @@
     shiftDown = e.shiftKey;
     if (e.code === 'Space') { spaceDown = true; e.preventDefault(); return; }
 
+    if (e.key === 'Enter' && currentTool === 'foundation' && foundationDraft.length >= 3) {
+      updateFoundationOutline(foundationDraft);
+      foundationDraft = [];
+      e.preventDefault(); markDirty(); return;
+    }
+    if (e.key === 'Enter' && currentTool === 'utility' && utilityDraft.length >= 2) {
+      const slope = ['drain', 'vent'].includes(routeSettings.kind) ? routeSettings.slopePercent : undefined;
+      addUtilityRoute(routeSettings.kind, utilityDraft, routeSettings.sizeMm, slope);
+      utilityDraft = [];
+      e.preventDefault(); markDirty(); return;
+    }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRouteId) {
+      removeUtilityRoute(selectedRouteId);
+      selectedElementId.set(null); selectedRouteId = null;
+      e.preventDefault(); return;
+    }
+
     // Exact-length entry while drawing a wall (issue #6):
     // type a number, then Enter places the wall at exactly that length.
     if (currentTool === 'wall' && wallStart && !editingTextAnnotationId && !e.metaKey && !e.ctrlKey) {
@@ -3447,6 +3612,7 @@
       selectedRoomId.set(null);
       elevationPickMode.set(false);
       wallStart = null; wallSequenceFirst = null; typedWallLength = '';
+      foundationDraft = []; utilityDraft = []; selectedRouteId = null;
       placingFurnitureId.set(null);
       placingEntourageId.set(null);
       placingRotation.set(0);

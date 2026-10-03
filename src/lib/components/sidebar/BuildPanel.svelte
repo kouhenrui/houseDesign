@@ -8,7 +8,7 @@
   import { openProject } from '$lib/services/projectOpening';
   import ImportError from '$lib/components/ImportError.svelte';
   import { onDestroy } from 'svelte';
-  import { activateMeasurementTool, selectedTool, placingFurnitureId, placingDoorType, placingWindowType, placingStair, addStair, placingColumn, placingColumnShape, activeFloor, setBackgroundImage, canvasCamX, canvasCamY, placingEntourageId, addCustomEntourage } from '$lib/stores/project';
+  import { activateMeasurementTool, selectedTool, placingFurnitureId, placingDoorType, placingWindowType, placingStair, addStair, placingColumn, placingColumnShape, activeFloor, setBackgroundImage, canvasCamX, canvasCamY, placingEntourageId, addCustomEntourage, selectedUtilityRoute, updateFoundationOutline, currentProject } from '$lib/stores/project';
   import type { Tool } from '$lib/stores/project';
   import type { Door, Window as Win, CustomEntourageDef } from '$lib/models/types';
   import { entourageCatalog, entourageCategories } from '$lib/utils/entourageCatalog';
@@ -19,7 +19,6 @@
   import FurnitureThumbnail from './FurnitureThumbnail.svelte';
   import CustomModelPanel from './CustomModelPanel.svelte';
   import { createProjectFromRoomPlan, extractRoomJsonFromZip, roomPlanImportOptions, validateRoomPlan, ORTHO_VERSION } from '$lib/utils/roomplanImport';
-  import { currentProject } from '$lib/stores/project';
 
   const openingLifetime = new AbortController();
   onDestroy(() => openingLifetime.abort());
@@ -395,6 +394,52 @@
             <div class="text-xs text-gray-400">{$t('buildTools.wallHelp')}</div>
           </div>
         </button>
+
+        <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2 mt-3">{$t('buildTools.foundationUtilities')}</h3>
+        <label class="block text-xs font-medium text-gray-600">
+          {$t('buildTools.utilityType')}
+          <select value={$selectedUtilityRoute.kind}
+            onchange={(event) => selectedUtilityRoute.update(route => ({ ...route, kind: (event.currentTarget as HTMLSelectElement).value as typeof route.kind }))}
+            class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 text-sm text-gray-700">
+            <option value="power">{$t('utility.power')}</option>
+            <option value="lighting">{$t('utility.lighting')}</option>
+            <option value="cold-water">{$t('utility.coldWater')}</option>
+            <option value="hot-water">{$t('utility.hotWater')}</option>
+            <option value="drain">{$t('utility.drain')}</option>
+            <option value="vent">{$t('utility.vent')}</option>
+            <option value="gas">{$t('utility.gas')}</option>
+          </select>
+        </label>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="text-xs font-medium text-gray-600">
+            {$t('buildTools.routeSize')}
+            <input type="number" min="1" max="500" step="1" value={$selectedUtilityRoute.sizeMm}
+              oninput={(event) => selectedUtilityRoute.update(route => ({ ...route, sizeMm: Number((event.currentTarget as HTMLInputElement).value) }))}
+              class="mt-1 w-full rounded border border-gray-300 px-2 py-2 text-sm" />
+          </label>
+          <label class="text-xs font-medium text-gray-600">
+            {$t('buildTools.slope')}
+            <input type="number" min="-100" max="100" step="0.1" value={$selectedUtilityRoute.slopePercent}
+              oninput={(event) => selectedUtilityRoute.update(route => ({ ...route, slopePercent: Number((event.currentTarget as HTMLInputElement).value) }))}
+              class="mt-1 w-full rounded border border-gray-300 px-2 py-2 text-sm" />
+          </label>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick={() => setTool('foundation')}
+            class="px-2 py-2 border rounded text-xs font-medium {currentTool === 'foundation' ? 'border-amber-500 bg-amber-50 text-amber-900' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}">
+            {$t('buildTools.drawFoundation')}
+          </button>
+          <button type="button" onclick={() => setTool('utility')}
+            class="px-2 py-2 border rounded text-xs font-medium {currentTool === 'utility' ? 'border-blue-500 bg-blue-50 text-blue-900' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}">
+            {$t('buildTools.drawRoute')}
+          </button>
+        </div>
+        {#if $currentProject?.foundationOutline?.length}
+          <button type="button" onclick={() => updateFoundationOutline(undefined)}
+            class="w-full px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-50 border border-gray-200 rounded">
+            {$t('buildTools.clearFoundation')}
+          </button>
+        {/if}
 
         <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2 mt-3">{$t('buildTools.structure')}</h3>
         <button

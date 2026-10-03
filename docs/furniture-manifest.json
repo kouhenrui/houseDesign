@@ -2623,8 +2623,125 @@
       "model": null
     },
     {
+      "id": "sym_service_entrance",
+      "name": "Electrical Service Entrance",
+      "category": "Electrical",
+      "dimensionsCm": {
+        "width": 20,
+        "depth": 20,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_meter",
+      "name": "Electrical Meter",
+      "category": "Electrical",
+      "dimensionsCm": {
+        "width": 18,
+        "depth": 18,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_panel",
+      "name": "Breaker Panel",
+      "category": "Electrical",
+      "dimensionsCm": {
+        "width": 25,
+        "depth": 15,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_outlet_gfci",
+      "name": "GFCI Outlet",
+      "category": "Electrical",
+      "dimensionsCm": {
+        "width": 15,
+        "depth": 15,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_outlet_240v",
+      "name": "240 V Outlet",
+      "category": "Electrical",
+      "dimensionsCm": {
+        "width": 18,
+        "depth": 18,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_data",
+      "name": "Data Outlet",
+      "category": "Electrical",
+      "dimensionsCm": {
+        "width": 15,
+        "depth": 15,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_exhaust_fan",
+      "name": "Exhaust Fan",
+      "category": "Electrical",
+      "dimensionsCm": {
+        "width": 20,
+        "depth": 20,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
       "id": "sym_water_supply",
       "name": "Water Supply",
+      "category": "Plumbing",
+      "dimensionsCm": {
+        "width": 15,
+        "depth": 15,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_hot_water",
+      "name": "Hot Water Supply",
+      "category": "Plumbing",
+      "dimensionsCm": {
+        "width": 15,
+        "depth": 15,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_cold_water",
+      "name": "Cold Water Supply",
       "category": "Plumbing",
       "dimensionsCm": {
         "width": 15,
@@ -2642,6 +2759,84 @@
       "dimensionsCm": {
         "width": 15,
         "depth": 15,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_floor_drain",
+      "name": "Floor Drain",
+      "category": "Plumbing",
+      "dimensionsCm": {
+        "width": 15,
+        "depth": 15,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_vent_stack",
+      "name": "Vent Stack",
+      "category": "Plumbing",
+      "dimensionsCm": {
+        "width": 18,
+        "depth": 18,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_cleanout",
+      "name": "Drain Cleanout",
+      "category": "Plumbing",
+      "dimensionsCm": {
+        "width": 15,
+        "depth": 15,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_shutoff_valve",
+      "name": "Water Shutoff Valve",
+      "category": "Plumbing",
+      "dimensionsCm": {
+        "width": 15,
+        "depth": 15,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_water_meter",
+      "name": "Water Meter",
+      "category": "Plumbing",
+      "dimensionsCm": {
+        "width": 18,
+        "depth": 18,
+        "height": 0
+      },
+      "dimensionStatus": "catalog-defaults-not-product-measurements",
+      "webRepresentation": "2d-symbol",
+      "model": null
+    },
+    {
+      "id": "sym_sewer_connection",
+      "name": "Sewer Connection",
+      "category": "Plumbing",
+      "dimensionsCm": {
+        "width": 20,
+        "depth": 20,
         "height": 0
       },
       "dimensionStatus": "catalog-defaults-not-product-measurements",

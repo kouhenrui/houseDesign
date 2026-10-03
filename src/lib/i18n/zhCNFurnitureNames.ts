@@ -44,6 +44,11 @@ const overrides: Record<string, string> = {
   sym_outlet: '电源插座', sym_switch: '电灯开关', sym_ceiling_fan: '吊扇', sym_junction: '接线盒',
   sym_smoke: '烟雾探测器', sym_water_supply: '供水点', sym_drain: '排水点', sym_water_heater: '热水器',
   sym_washer_hookup: '洗衣机接口', sym_gas_line: '燃气管线',
+  sym_service_entrance: '电力进户点', sym_meter: '电表', sym_panel: '配电箱',
+  sym_outlet_gfci: '漏电保护插座', sym_outlet_240v: '240 伏插座', sym_data: '网络信息插座',
+  sym_exhaust_fan: '排风扇', sym_hot_water: '热水供水点', sym_cold_water: '冷水供水点',
+  sym_floor_drain: '地漏', sym_vent_stack: '排水通气立管', sym_cleanout: '排水清扫口',
+  sym_shutoff_valve: '供水截止阀', sym_water_meter: '水表', sym_sewer_connection: '污水接管点',
 };
 
 export function zhCNFurnitureName(id: string, name: string): string {

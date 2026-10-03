@@ -227,6 +227,7 @@ export interface Floor {
   furniture: FurnitureItem[];
   stairs: Stair[];
   columns: Column[];
+  utilityRoutes?: UtilityRoute[];
   backgroundImage?: BackgroundImage;
   guides: GuideLine[];
   measurements: Measurement[];
@@ -234,6 +235,16 @@ export interface Floor {
   textAnnotations: TextAnnotation[];
   groups: ElementGroup[];
   entourage?: EntourageItem[];
+}
+
+export type UtilityRouteKind = 'power' | 'lighting' | 'cold-water' | 'hot-water' | 'drain' | 'vent' | 'gas';
+
+export interface UtilityRoute {
+  id: string;
+  kind: UtilityRouteKind;
+  points: Point[];
+  sizeMm: number;
+  slopePercent?: number;
 }
 
 export interface CustomModelDef {
@@ -255,6 +266,8 @@ export interface Project {
   customModels?: CustomModelDef[];
   attachmentNames?: Record<string, string>;
   projectPackage?: ProjectPackageState;
+  foundationType?: FoundationType;
+  foundationOutline?: Point[];
   id: string;
   name: string;
   description?: string;
@@ -264,3 +277,5 @@ export interface Project {
   updatedAt: Date;
   customEntourage?: CustomEntourageDef[];
 }
+
+export type FoundationType = 'slab-on-grade' | 'crawlspace' | 'basement';

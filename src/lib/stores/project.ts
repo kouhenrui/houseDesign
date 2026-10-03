@@ -4,7 +4,7 @@ import { splitWallGeometry } from '$lib/utils/splitWallGeometry';
 import { wallPathProfile } from '$lib/utils/wallProfiles';
 import { duplicatePlanSelection, pastePlanSelection } from '$lib/utils/duplicateSelection';
 import { writable, derived, get } from 'svelte/store';
-import type { Project, Floor, Wall, Door, Window as Win, FurnitureItem, Point, Stair, Column, BackgroundImage, GuideLine, ElementGroup, EntourageItem } from '$lib/models/types';
+import type { Project, Floor, Wall, Door, Window as Win, FurnitureItem, Point, Stair, Column, BackgroundImage, GuideLine, ElementGroup, EntourageItem, FoundationType, UtilityRoute, UtilityRouteKind } from '$lib/models/types';
 import { planWallResize, finitePoint, validPositiveDimension, validOpeningPosition, type WallEndpoint } from '$lib/utils/wallEditing';
 import { getOuterWalls } from '$lib/utils/outerWalls';
 import { nextFloorLevel, floorElevations, validFloorElevation, DEFAULT_FLOOR_SPACING } from '$lib/utils/floors';
@@ -42,8 +42,9 @@ export const activeFloor = derived(currentProject, ($p) => {
   return $p.floors.find((f) => f.id === $p.activeFloorId) ?? $p.floors[0] ?? null;
 });
 
-export type Tool = 'select' | 'wall' | 'door' | 'window' | 'furniture' | 'text' | 'measure' | 'annotate';
+export type Tool = 'select' | 'wall' | 'door' | 'window' | 'furniture' | 'text' | 'measure' | 'annotate' | 'foundation' | 'utility';
 export const selectedTool = writable<Tool>('select');
+export const selectedUtilityRoute = writable<{ kind: UtilityRouteKind; sizeMm: number; slopePercent: number }>({ kind: 'cold-water', sizeMm: 20, slopePercent: 2 });
 
 /** Shared activation for the sidebar and keyboard measurement tools. */
 export function activateMeasurementTool(tool: 'measure' | 'annotate') {
@@ -617,6 +618,7 @@ export function removeElement(id: string) {
     f.furniture = f.furniture.filter((fi) => fi.id !== id);
     if (f.stairs) f.stairs = f.stairs.filter((s) => s.id !== id);
     if (f.columns) f.columns = f.columns.filter((c) => c.id !== id);
+    if (f.utilityRoutes) f.utilityRoutes = f.utilityRoutes.filter(route => route.id !== id);
     if (f.textAnnotations) f.textAnnotations = f.textAnnotations.filter((t) => t.id !== id);
     if (f.measurements) f.measurements = f.measurements.filter(item => item.id !== id);
     if (f.annotations) f.annotations = f.annotations.filter(item => item.id !== id);
@@ -923,6 +925,41 @@ export function updateFloorSlabThickness(floorId: string, thickness?: number) {
   else floor.slabThickness = thickness;
   p.updatedAt = new Date();
   currentProject.set({ ...p });
+}
+
+export function updateProjectFoundationType(foundationType: FoundationType) {
+  const p = get(currentProject);
+  if (!p || !['slab-on-grade', 'crawlspace', 'basement'].includes(foundationType) || p.foundationType === foundationType) return;
+  snapshot('Changed foundation type', 'project-foundation');
+  p.foundationType = foundationType;
+  p.updatedAt = new Date();
+  currentProject.set({ ...p });
+}
+
+export function updateFoundationOutline(points?: Point[]) {
+  const p = get(currentProject);
+  if (!p || (points && (points.length < 3 || points.some(point => !Number.isFinite(point.x) || !Number.isFinite(point.y))))) return;
+  if (JSON.stringify(p.foundationOutline) === JSON.stringify(points)) return;
+  snapshot('Changed foundation outline', 'project-foundation-outline');
+  if (points) p.foundationOutline = points.map(point => ({ ...point }));
+  else delete p.foundationOutline;
+  p.updatedAt = new Date();
+  currentProject.set({ ...p });
+}
+
+export function addUtilityRoute(kind: UtilityRouteKind, points: Point[], sizeMm = 20, slopePercent?: number): string {
+  if (points.length < 2 || points.some(point => !Number.isFinite(point.x) || !Number.isFinite(point.y)) ||
+      !Number.isFinite(sizeMm) || sizeMm <= 0 || (slopePercent !== undefined && (!Number.isFinite(slopePercent) || Math.abs(slopePercent) > 100))) return '';
+  const id = uid();
+  mutate(floor => {
+    floor.utilityRoutes ??= [];
+    floor.utilityRoutes.push({ id, kind, points: points.map(point => ({ ...point })), sizeMm, ...(slopePercent === undefined ? {} : { slopePercent }) });
+  }, `Added ${kind} route`);
+  return id;
+}
+
+export function removeUtilityRoute(id: string) {
+  mutate(floor => { floor.utilityRoutes = (floor.utilityRoutes ?? []).filter(route => route.id !== id); }, 'Deleted utility route');
 }
 
 export function updateProjectName(name: string) {

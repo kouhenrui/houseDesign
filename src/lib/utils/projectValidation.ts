@@ -53,6 +53,11 @@ export function readProject(value: unknown): Project {
   text(project!.id, 'id', true);
   defaults(project!, { name: 'Untitled Project' });
   text(project!.name, 'name'); strings(project!, ['description'], 'document');
+  if (project!.foundationType !== undefined) choice(project!.foundationType, ['slab-on-grade', 'crawlspace', 'basement'], 'foundationType');
+  if (project!.foundationOutline !== undefined) {
+    if (!Array.isArray(project!.foundationOutline) || project!.foundationOutline.length < 3) fail('foundationOutline', 'must contain at least three points');
+    project!.foundationOutline.forEach((item: unknown, index: number) => point(item, `foundationOutline[${index}]`));
+  }
   if (project!.projectPackage !== undefined) validateRetainedDetailState(project!.projectPackage);
   const customModelIds = validateCustomModelDefinitions(project!.customModels, project!.projectPackage?.assets);
   if (project!.attachmentNames !== undefined) {
@@ -128,6 +133,13 @@ export function readProject(value: unknown): Project {
     elements('columns', (item, path) => {
       positioned(item, path); positive(item.diameter, `${path}.diameter`); number(item.height, `${path}.height`, 0);
       choice(item.shape, ['round', 'square'], `${path}.shape`); defaults(item, { color: '#cccccc' }); text(item.color, `${path}.color`);
+    });
+    if (floor.utilityRoutes !== undefined) elements('utilityRoutes', (item, path) => {
+      choice(item.kind, ['power', 'lighting', 'cold-water', 'hot-water', 'drain', 'vent', 'gas'], `${path}.kind`);
+      if (!Array.isArray(item.points) || item.points.length < 2) fail(`${path}.points`, 'must contain at least two points');
+      item.points.forEach((value: unknown, index: number) => point(value, `${path}.points[${index}]`));
+      positive(item.sizeMm, `${path}.sizeMm`);
+      if (item.slopePercent !== undefined) number(item.slopePercent, `${path}.slopePercent`, -100, 100);
     });
     elements('rooms', (item, path) => {
       booleans(item, ['floorOpening'], path);
