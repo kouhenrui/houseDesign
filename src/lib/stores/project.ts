@@ -12,6 +12,8 @@ import { getWallStartHeight, getWallEndHeight, getWallHeightAt, validWallHeight 
 import type { DetailTarget, ItemDetails } from '$lib/models/types';
 import { detailItem, itemDetails, validateItemDetails } from '$lib/utils/itemDetails';
 import { readProject } from '$lib/utils/projectValidation';
+import type { UtilityRouteRepository } from '$lib/domain/utilities/UtilityRouteRepository';
+import type { UtilityRoute as DomainUtilityRoute } from '$lib/domain/utilities/UtilityRoute';
 
 
 function uid(): string {
@@ -947,20 +949,17 @@ export function updateFoundationOutline(points?: Point[]) {
   currentProject.set({ ...p });
 }
 
-export function addUtilityRoute(kind: UtilityRouteKind, points: Point[], sizeMm = 20, slopePercent?: number): string {
-  if (points.length < 2 || points.some(point => !Number.isFinite(point.x) || !Number.isFinite(point.y)) ||
-      !Number.isFinite(sizeMm) || sizeMm <= 0 || (slopePercent !== undefined && (!Number.isFinite(slopePercent) || Math.abs(slopePercent) > 100))) return '';
-  const id = uid();
-  mutate(floor => {
-    floor.utilityRoutes ??= [];
-    floor.utilityRoutes.push({ id, kind, points: points.map(point => ({ ...point })), sizeMm, ...(slopePercent === undefined ? {} : { slopePercent }) });
-  }, `Added ${kind} route`);
-  return id;
-}
-
-export function removeUtilityRoute(id: string) {
-  mutate(floor => { floor.utilityRoutes = (floor.utilityRoutes ?? []).filter(route => route.id !== id); }, 'Deleted utility route');
-}
+export const projectUtilityRouteRepository: UtilityRouteRepository = {
+  add(route: DomainUtilityRoute) {
+    mutate(floor => {
+      floor.utilityRoutes ??= [];
+      floor.utilityRoutes.push(route.toData());
+    }, `Added ${route.kind} route`);
+  },
+  remove(id: string) {
+    mutate(floor => { floor.utilityRoutes = (floor.utilityRoutes ?? []).filter(route => route.id !== id); }, 'Deleted utility route');
+  },
+};
 
 export function updateProjectName(name: string) {
   const p = get(currentProject);

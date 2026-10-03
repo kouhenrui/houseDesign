@@ -9,7 +9,8 @@
   import { planContentBounds, hasPlanContent } from '$lib/utils/planContentBounds';
   import { connectedWallEndpoints } from '$lib/utils/wallEditing';
   import { createDrawScheduler } from '$lib/utils/drawScheduler';
-  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, duplicateSelection, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode, updateFoundationOutline, addUtilityRoute, removeUtilityRoute, selectedUtilityRoute } from '$lib/stores/project';
+  import { activeFloor, selectedTool, selectedElementId, selectedElementIds, selectedRoomId, addWall, addDoor, addWindow, updateWall, moveWallEndpoint, moveWallGeometryDuringDrag, updateDoor, updateWindow, addFurniture, moveFurniture, transformFurnitureDuringDrag, rotateFurniture, rotateSelection, setFurnitureRotation, scaleFurniture, removeElement, placingFurnitureId, placingRotation, placingDoorType, placingWindowType, detectedRoomsStore, duplicateDoor, duplicateWindow, duplicateFurniture, duplicateSelection, pasteSelection, moveWallParallel, splitWall, wallSplitIntersectsOpening, snapEnabled, placingStair, addStair, moveStair, updateStair, placingColumn, placingColumnShape, addColumn, moveColumn, updateColumn, calibrationMode, calibrationPoints, updateBackgroundImage, setBackgroundImage, canvasZoom, canvasMinimumZoom, canvasCamX, canvasCamY, panMode, showFurnitureStore, addGuide, moveGuide, removeGuide, beginUndoGroup, endUndoGroup, layerVisibility, updateRoom, addMeasurement, updateMeasurement, removeMeasurement, addAnnotation, removeAnnotation, updateAnnotation, addTextAnnotation, removeTextAnnotation, updateTextAnnotation, moveTextAnnotation, toggleFurnitureLock, toggleSelectionLock, createGroup, ungroupElements, findGroupForElement, placingEntourageId, addEntourageItem, moveEntourage, resizeEntourage, currentProject, elevationWallId, elevationPickMode, updateFoundationOutline, selectedUtilityRoute } from '$lib/stores/project';
+  import { utilityRouteService } from '$lib/services/utilityRouteService';
   import type { Point, Wall, Door, Window as Win, FurnitureItem, Stair, Column, GuideLine, Measurement, Annotation, TextAnnotation, CustomEntourageDef, UtilityRoute, UtilityRouteKind } from '$lib/models/types';
   import type { Floor, Room } from '$lib/models/types';
   import { resolveRoomGeometry, roomLabelPosition, roomCentroid } from '$lib/utils/roomDetection';
@@ -2809,7 +2810,7 @@
       const points = utilityDraft.filter((point, index, all) => index === 0 || Math.hypot(point.x - all[index - 1].x, point.y - all[index - 1].y) > 1);
       if (points.length >= 2 && currentFloor) {
         const slopePercent = ['drain', 'vent'].includes(routeSettings.kind) ? routeSettings.slopePercent : undefined;
-        addUtilityRoute(routeSettings.kind, points, routeSettings.sizeMm, slopePercent);
+        utilityRouteService.add({ kind: routeSettings.kind, points, sizeMm: routeSettings.sizeMm, slopePercent });
       }
       utilityDraft = [];
       return;
@@ -3526,12 +3527,12 @@
     }
     if (e.key === 'Enter' && currentTool === 'utility' && utilityDraft.length >= 2) {
       const slope = ['drain', 'vent'].includes(routeSettings.kind) ? routeSettings.slopePercent : undefined;
-      addUtilityRoute(routeSettings.kind, utilityDraft, routeSettings.sizeMm, slope);
+      utilityRouteService.add({ kind: routeSettings.kind, points: utilityDraft, sizeMm: routeSettings.sizeMm, slopePercent: slope });
       utilityDraft = [];
       e.preventDefault(); markDirty(); return;
     }
     if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRouteId) {
-      removeUtilityRoute(selectedRouteId);
+      utilityRouteService.remove(selectedRouteId);
       selectedElementId.set(null); selectedRouteId = null;
       e.preventDefault(); return;
     }

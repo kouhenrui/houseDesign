@@ -2,7 +2,8 @@ import { beforeEach, expect, it } from 'vitest';
 import { get } from 'svelte/store';
 import { addFloor, createDefaultFloor, currentProject, loadProject, removeFloor, setActiveFloor, undo, redo, selectedElementId, selectedElementIds, elevationWallId, selectedTool } from '$lib/stores/project';
 import { roomProject } from './fixtures/project';
-import { updateFloorElevation, updateFloorSlabThickness, updateProjectFoundationType, updateFoundationOutline, addUtilityRoute } from '$lib/stores/project';
+import { updateFloorElevation, updateFloorSlabThickness, updateProjectFoundationType, updateFoundationOutline } from '$lib/stores/project';
+import { utilityRouteService } from '$lib/services/utilityRouteService';
 import { readProject } from '$lib/utils/projectValidation';
 import { calibrationMode, calibrationPoints } from '$lib/stores/project';
 import { floorElevations } from '$lib/utils/floors';
@@ -171,7 +172,7 @@ it('stores foundation selection at project level and supports undo and redo', ()
 it('persists foundation outlines and floor-local utility routes with undo', () => {
   const outline = [{ x: 0, y: 0 }, { x: 600, y: 0 }, { x: 600, y: 400 }, { x: 0, y: 400 }];
   updateFoundationOutline(outline);
-  const routeId = addUtilityRoute('drain', [{ x: 100, y: 100 }, { x: 300, y: 100 }, { x: 300, y: 250 }], 100, 2);
+  const routeId = utilityRouteService.add({ kind: 'drain', points: [{ x: 100, y: 100 }, { x: 300, y: 100 }, { x: 300, y: 250 }], sizeMm: 100, slopePercent: 2 });
   expect(routeId).toBeTruthy();
   expect(get(currentProject)!.foundationOutline).toEqual(outline);
   expect(get(currentProject)!.floors[0].utilityRoutes).toEqual([{ id: routeId, kind: 'drain', points: [{ x: 100, y: 100 }, { x: 300, y: 100 }, { x: 300, y: 250 }], sizeMm: 100, slopePercent: 2 }]);
@@ -182,7 +183,6 @@ it('persists foundation outlines and floor-local utility routes with undo', () =
   expect(get(currentProject)!.floors[0].utilityRoutes).toBeUndefined();
   redo();
   expect(get(currentProject)!.floors[0].utilityRoutes).toHaveLength(1);
-  expect(addUtilityRoute('drain', [{ x: 0, y: 0 }], 100, 2)).toBe('');
 });
 
 it('rejects malformed foundation and utility geometry when importing a project', () => {

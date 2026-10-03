@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { get } from 'svelte/store';
 import type { FurnitureItem, Point, Wall } from '$lib/models/types';
 import { getFurnitureSize } from '$lib/utils/furnitureCatalog';
-import { resizeFurnitureFromHandle, type HandleType } from '$lib/utils/canvasInteraction';
+import { resizeFurnitureFromHandle, WALL_SNAP_DIST, type HandleType } from '$lib/utils/canvasInteraction';
 import { snapFurnitureToWalls } from '$lib/utils/furnitureGeometry';
 import { findFurnitureAt, findHandleAt } from '$lib/utils/hitTesting';
 import { beginUndoGroup, endUndoGroup, loadProject, currentProject, transformFurnitureDuringDrag, updateFurniture, undo, redo } from '$lib/stores/project';
@@ -76,6 +76,10 @@ const handles: [Exclude<HandleType, 'rotate'>, number, number][] = [
   ['resize-tl', -1, -1], ['resize-tr', 1, -1], ['resize-bl', -1, 1], ['resize-br', 1, 1],
   ['resize-l', -1, 0], ['resize-r', 1, 0], ['resize-t', 0, -1], ['resize-b', 0, 1],
 ];
+
+it('keeps furniture attraction to walls within the intended small offset', () => {
+  expect(WALL_SNAP_DIST).toBe(12);
+});
 
 it.each([0, 30, 90, 180, 270].flatMap(rotation => handles.map(([handle, x, y]) => ({ rotation, handle, x, y }))))(
   '$handle keeps the opposite anchor fixed at $rotation degrees', ({ rotation, handle, x, y }) => {
